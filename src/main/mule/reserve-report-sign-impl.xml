@@ -1,0 +1,841 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:sharepoint="http://www.mulesoft.org/schema/mule/sharepoint"
+	xmlns:ftp="http://www.mulesoft.org/schema/mule/ftp"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:java="http://www.mulesoft.org/schema/mule/java" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ftp http://www.mulesoft.org/schema/mule/ftp/current/mule-ftp.xsd
+http://www.mulesoft.org/schema/mule/sharepoint http://www.mulesoft.org/schema/mule/sharepoint/current/mule-sharepoint.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd">
+	<http:request-config name="DocuSignAuthHTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="925c8f70-9af9-45ca-9548-457fc58e617a" >
+		<http:request-connection host="${docusign.api.auth.host}" port="${docusign.api.auth.port}" protocol="HTTPS"/>
+	</http:request-config>
+	<ee:object-store-caching-strategy name="Caching_Strategy" doc:name="Caching Strategy" doc:id="55ed22c1-ef58-43cc-8899-03fdcad8918e" keyGenerationExpression="#[vars.iss]" >
+		<os:private-object-store persistent="false" maxEntries="-1" entryTtl="180000" expirationInterval="180000" expirationIntervalUnit="SECONDS" />
+	</ee:object-store-caching-strategy>
+	<http:request-config name="DS_REST_HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="44741b8c-3aca-488c-8bc0-f985050a77cb" >
+		<http:request-connection protocol="HTTPS" host="${docusign.api.esignature.host}" port="${docusign.api.esignature.port}" />
+	</http:request-config>
+	<http:request-config name="MS_HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="8559806f-822c-413b-8886-59482e09ec73" basePath="${ms.graph.basepath}">
+		<http:request-connection protocol="HTTPS" host="${ms.graph.auth.host}" port="${ms.graph.port}"/>
+	</http:request-config>
+	<http:request-config name="HTTP_Request_configuration_Graph_node" doc:name="HTTP Request configuration" doc:id="1e37d484-0ebd-4cd7-9e4f-f09ecf81108f" basePath="${ms.graph.node.basepath}">
+		<http:request-connection host="${ms.graph.host}" port="${ms.graph.port}" protocol="HTTPS"/>
+	</http:request-config>
+	<os:config name="ObjectStore_Config" doc:name="ObjectStore Config" doc:id="0dee41fd-e496-47cb-9bc4-29219cbd7588" >
+		<os:connection >
+			<reconnection />
+		</os:connection>
+	</os:config>
+	<ee:object-store-caching-strategy name="Caching_Strategy1" doc:name="Caching Strategy" doc:id="cedd6e07-fecc-4222-bc36-0274f735a4eb" keyGenerationExpression="#[vars.graphClientId]">
+		<os:private-object-store maxEntries="-1" entryTtl="180000" expirationInterval="180000" expirationIntervalUnit="SECONDS"/>
+	</ee:object-store-caching-strategy>
+	<os:config name="ObjectStore_Config1" doc:name="ObjectStore Config" doc:id="f7fc6746-c92a-407b-a1f0-171fb3efaca6" >
+		<os:connection >
+			<reconnection />
+		</os:connection>
+	</os:config>
+	<os:object-store name="Object_store_Role_to_SignRole" doc:name="Object store" doc:id="05c69dfc-eb61-478e-9387-22175cac60d7" config-ref="ObjectStore_Config1"/>
+	<os:object-store name="Object_store_Role_to_CommentRole" doc:name="Object store" doc:id="7704693a-f8c7-4f54-ad55-5ec483b7eda6" config-ref="ObjectStore_Config2"/>
+	<os:config name="ObjectStore_Config2" doc:name="ObjectStore Config" doc:id="49fc2fe0-a7bb-486b-8171-84004305bd50" >
+		<os:connection >
+			<reconnection />
+		</os:connection>
+	</os:config>
+	<os:object-store name="Object_store_Role_to_Rank" doc:name="Object store" doc:id="2e698ba9-c5e6-4327-8606-7bca8cfec70e" config-ref="ObjectStore_Config"/>
+	<os:object-store name="Object_store_Role_to_Name" doc:name="Object store" doc:id="053b931a-0f29-436a-a61f-df448d199303" config-ref="ObjectStore_Config3"/>
+	<os:config name="ObjectStore_Config3" doc:name="ObjectStore Config" doc:id="7e572bcd-77ef-43be-90d4-a74a23ba7ce1" >
+		<os:connection >
+			<reconnection />
+		</os:connection>
+	</os:config>
+	<os:config name="ObjectStore_Config4" doc:name="ObjectStore Config" doc:id="ae8609a2-64fe-45e4-afd8-9557243074d7" >
+		<os:connection >
+			<reconnection />
+		</os:connection>
+	</os:config>
+	<os:object-store name="Object_store_Role_to_DSTemplateID" doc:name="Object store" doc:id="cb241b75-b2eb-4a72-b0e4-800810eada7a" config-ref="ObjectStore_Config4"/>
+	<os:config name="ObjectStore_Config5" doc:name="ObjectStore Config" doc:id="3aad75e8-2f0d-45c3-9e97-540d49282256" >
+		<os:connection >
+			<reconnection />
+		</os:connection>
+	</os:config>
+	<os:object-store name="Object_store_Country-Field_to_Role" doc:name="Object store" doc:id="b513afb0-9480-4633-90d5-9bf7c3fb9aca" config-ref="ObjectStore_Config5" />
+	<http:request-config name="User_details_HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="dd264f1f-843e-48d5-b0a9-f65ca5dc741b" basePath="${user.details.api.basepath}">
+		<http:request-connection protocol="HTTPS" host="${user.details.api.host}" port="${user.details.api.port}" maxConnections="10">
+			<reconnection >
+				<reconnect frequency="20000" count="10" />
+			</reconnection>
+			<http:authentication >
+				<http:basic-authentication username="${user.details.api.client_id}" password="${user.details.api.client_secret}"/>
+			</http:authentication>
+		</http:request-connection>
+	</http:request-config>
+	<flow name="process-report" doc:id="35df2bc0-5c98-4422-afb7-e544f02bb4d8">
+		<logger level="INFO" doc:name="+Logger" doc:id="21c18333-3ac9-4ef5-be58-eccd13f39184" message='{ "API_NAME" : "${api.name}", "API_VERSION" : "${api.version}" , "FLOW_NAME": "+#[mule.muleContext.componentLocator.componentLocations[1].name]", "MULE_ID": "#[message.id]"}' />
+		<ee:transform doc:name="Read Report" doc:id="305c0246-5b00-41b2-bbda-578f10e6e92d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable resource="set-pdf-base64.dwl" variableName="pdfBase64" />
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Get country and field" doc:id="a7ebb150-b583-4002-b682-58cae887f691">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="countryFieldArr"><![CDATA[%dw 2.0
+import * from dw::core::Strings
+output application/java
+var filename = vars.filename
+var filecode = vars.filecode ++ '-'
+var fileext = ".pdf"
+var countryfieldpdf = filename replace filecode with ""
+var countryfield = countryfieldpdf replace fileext with ""
+var uppercase_countryfield = upper(countryfield)
+---
+uppercase_countryfield splitBy("_")
+]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="3a0683f6-32dc-4809-bfce-fbf7d4228510" message="FTP payload --&gt; #[vars.pdfBase64]" />
+		<flow-ref doc:name="lookup-init" doc:id="cc041bd4-6c8f-4db5-bcd7-d75b07649512" name="lookup-init" />
+		<flow-ref doc:name="create-envelope" doc:id="85a5c4eb-b95f-4f3a-93d1-c7fbd24e36e9" name="create-envelope-anchor-offset" />
+		<logger level="INFO" doc:name="-Logger" doc:id="3b26ec8f-5940-4a3a-a7e6-57e835b09b74" message='{ "API_NAME" : "${api.name}", "API_VERSION" : "${api.version}" , "FLOW_NAME": "-#[mule.muleContext.componentLocator.componentLocations[1].name]", "MULE_ID": "#[message.id]"}' />
+	</flow>
+	<flow name="create-envelope-anchor-offset" doc:id="6e78b48e-3289-4f10-9d99-4107ab7245b7" >
+		<logger level="INFO" doc:name="+Logger" doc:id="3d0e5aac-5bb1-4d53-88d6-3bff1aac7ad7" message='{ "API_NAME" : "${api.name}", "API_VERSION" : "${api.version}" , "FLOW_NAME": "+#[mule.muleContext.componentLocator.componentLocations[1].name]", "MULE_ID": "#[message.id]"}' />
+		<flow-ref doc:name="get-DS-securityToken" doc:id="cc6583fe-e172-4f00-a4a4-06a558a7b5fa" name="get-DS-securityToken" />
+		<flow-ref doc:name="Set Envelope Context" doc:id="42d7243c-929f-448b-857a-4a269a202765" name="set-envelope-context-using-anchor-offsets" />
+		<ee:transform doc:name="Create Payload" doc:id="d5adb927-eca8-4bc1-81dc-a4404ac06fcd" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output multipart/form-data
+boundary='85b5c5'
+---
+{
+	parts : 
+	{
+		envelope_context : 
+		{
+			headers : 
+			{
+				"Content-Type" : "application/json"
+			},
+			content : vars.envelopeContext
+		},
+		reserve_report:
+		{
+			headers :
+			{
+				"Content-Disposition" : 
+				{
+					"filename" : vars."report-name",
+					"documentId" : "1"
+				},
+				"Content-Transfer-Encoding" : "base64",
+				"Content-Type" : "application/pdf"
+			},
+			content : vars.pdfBase64
+		}
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Create Envelope in DS" doc:id="deb573c4-790d-4efa-9cc2-a05dc626bd32" config-ref="DS_REST_HTTP_Request_configuration" path="${docusign.api.esignature.basepath}/${docusign.api.esignature.accountpath}/{account}/${docusign.api.esignature.envelopepath}" >
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Content-Type" : vars.createEnvContentType,
+	"Accept" : vars.createEnvAccept,
+	"Authorization" : "Bearer " ++ vars.accessToken
+}]]]></http:headers>
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	"account" : vars.accountNo
+}]]]></http:uri-params>
+		</http:request>
+		<flow-ref doc:name="Cleanup" doc:id="8b80dfe9-b463-4381-bf17-723d9dab4c04" name="cleanup-after-create-envelope" />
+		<logger level="INFO" doc:name="-Logger" doc:id="5ab847a4-007a-4316-8f0a-e4f62618d9a4" message='{ "API_NAME" : "${api.name}", "API_VERSION" : "${api.version}" , "FLOW_NAME": "-#[mule.muleContext.componentLocator.componentLocations[1].name]", "MULE_ID": "#[message.id]"}' />
+	</flow>
+	<flow name="create-envelope" doc:id="814272ab-fb3e-40f9-aa09-00631b210c1e">
+		<logger level="INFO" doc:name="+Logger" doc:id="7b5ebd5c-7ec8-48f1-b06c-214825ca4e1c" message='{ "API_NAME" : "${api.name}", "API_VERSION" : "${api.version}" , "FLOW_NAME": "+#[mule.muleContext.componentLocator.componentLocations[1].name]", "MULE_ID": "#[message.id]"}' />
+		<flow-ref doc:name="get-DS-securityToken" doc:id="111f6fa9-fb96-45a2-9f01-b8d8dcb5b265" name="get-DS-securityToken" />
+		<flow-ref doc:name="Set Envelope Context" doc:id="1f2953a3-4a1a-476d-ae8d-463d04670e09" name="set-envelope-context-using-anchor-offsets"/>
+		<ee:transform doc:name="Create Payload" doc:id="1acc0095-f80d-408c-b7eb-92633abff747">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output multipart/form-data
+boundary='85b5c5'
+---
+{
+	parts : 
+	{
+		envelope_context : 
+		{
+			headers : 
+			{
+				"Content-Type" : "application/json"
+			},
+			content : vars.envelopeContext
+		},
+		reserve_report:
+		{
+			headers :
+			{
+				"Content-Disposition" : 
+				{
+					"filename" : "ReserveReport.pdf",
+					"documentId" : "1"
+				},
+				"Content-Transfer-Encoding" : "base64",
+				"Content-Type" : "application/pdf"
+			},
+			content : vars.pdfBase64
+		}
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Create Envelope in DS" doc:id="f2d91a24-f457-4ac9-8156-cd8b14875cea" config-ref="DS_REST_HTTP_Request_configuration" path="${docusign.api.esignature.basepath}/${docusign.api.esignature.accountpath}/{account}/${docusign.api.esignature.envelopepath}">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"Content-Type" : vars.createEnvContentType,
+	"Accept" : vars.createEnvAccept,
+	"Authorization" : "Bearer " ++ vars.accessToken
+}]]]></http:headers>
+			<http:uri-params><![CDATA[#[output application/java
+---
+{
+	"account" : vars.accountNo
+}]]]></http:uri-params>
+		</http:request>
+		<flow-ref doc:name="Cleanup" doc:id="0f5a4021-7a5e-40fb-baed-22af7dfc0774" name="cleanup-after-create-envelope"/>
+		<logger level="INFO" doc:name="-Logger" doc:id="a95f114b-a18b-48a2-8ebe-71bf69fd8724" message='{ "API_NAME" : "${api.name}", "API_VERSION" : "${api.version}" , "FLOW_NAME": "-#[mule.muleContext.componentLocator.componentLocations[1].name]", "MULE_ID": "#[message.id]"}' />
+	</flow>
+	<flow name="TEMP" doc:id="e0941c44-5978-4b59-8a5c-eafd4297c631" >
+		<http:request method="POST" doc:name="Copy_of_Create Envelope in DS" doc:id="82a50d9f-6e9f-421b-8490-f79d5dcba564" config-ref="DS_REST_HTTP_Request_configuration" path="${docusign.api.esignature.basepath}/${docusign.api.esignature.accountpath}/{account}/${docusign.api.esignature.envelopepath}" >
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Content-Type" : vars.createEnvContentType,
+	"Accept" : vars.createEnvAccept,
+	"Authorization" : "Bearer " ++ vars.accessToken
+}]]]></http:headers>
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	"account" : vars.accountNo
+}]]]></http:uri-params>
+		</http:request>
+	</flow>
+	<flow name="cleanup-after-create-envelope" doc:id="2536da09-d456-4744-b3ea-0d27319885d6" >
+		<os:clear doc:name="Clear Country+Field to Role mappings" doc:id="4897f935-75cd-4100-b4f7-e316f81fe37f" objectStore="Object_store_Country-Field_to_Role"/>
+		<os:clear doc:name="Clear Role to CommentRole mappings" doc:id="65f77517-b317-4eea-a09e-b0873453a3c5" objectStore="Object_store_Role_to_CommentRole"/>
+		<os:clear doc:name="Clear Role to Name mappings" doc:id="a10f11b4-5a35-4883-b1ae-79eb764f299e" objectStore="Object_store_Role_to_Name"/>
+		<os:clear doc:name="Clear Role to Rank mappings" doc:id="ae000f8d-4571-4315-bd34-60604cea6093" objectStore="Object_store_Role_to_Rank"/>
+		<os:clear doc:name="Clear Role to SignRole mappings" doc:id="f28d2b3d-6144-448e-af2d-cff18c97a3b2" objectStore="Object_store_Role_to_SignRole"/>
+	</flow>
+	<flow name="set-envelope-context-using-anchor-offsets" doc:id="b122f77f-ed57-4d2a-b7d1-e90e96d4c38b" >
+		<os:retrieve doc:name="Retrieve Roles by Country+Field" doc:id="1f1d3755-1e46-4688-95ce-b4fb49200f8f" key="#[vars.countryFieldArr[0] ++ '|' ++ vars.countryFieldArr[1]]" objectStore="Object_store_Country-Field_to_Role" target="roles-from-lookup" />
+		<ee:transform doc:name="Split out roles" doc:id="5fddc135-78e3-4bf8-bc42-650244203aca" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+var rolePsv = vars."roles-from-lookup"
+---
+rolePsv splitBy('|') default ""]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[[]]" doc:name="Set Array for Sign Roles" doc:id="ca5e238e-af25-4071-8f36-450931960094" variableName="signRoleArr" />
+		<set-variable value="#[[]]" doc:name="Set Array for Comment Roles" doc:id="4e40dbbf-5ab5-49ee-9fe6-4326f3f2af69" variableName="commentRoleArr" />
+		<foreach doc:name="For Each Role in pipe-delimited-value" doc:id="3bca64b0-6674-4546-aa50-8b8c4cf8e963" collection="#[payload]">
+			<set-variable value="#[payload]" doc:name="Set Role" doc:id="ec9acb7a-f4d4-4faa-a60b-9e7c553e4dcf" variableName="current_role" />
+			<os:retrieve doc:name="Retrieve user's name by Country+Field+Role" doc:id="75129024-4213-4dd1-be3b-f1d304f0fb5f" key="#[vars.countryFieldArr[0] ++ '|' ++ vars.countryFieldArr[1] ++ '|' ++ vars.current_role]" objectStore="Object_store_Role_to_Name" target="fname_lname" >
+				<os:default-value ><![CDATA[#['empty']]]></os:default-value>
+			</os:retrieve>
+			<http:request method="GET" doc:name="Get email ID by user name" doc:id="b28a2d42-ae88-4756-af31-a56cea0a5d4c" config-ref="User_details_HTTP_Request_configuration" path="${user.details.api.legacyuser.path}" >
+				<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"name" : trim(vars.fname_lname)
+}]]]></http:query-params>
+			</http:request>
+			<set-variable value="#[payload[0].mail]" doc:name="Get Email ID" doc:id="5987de0a-7176-4b35-94c8-9c1221b39c48" variableName="email_id" />
+			<ee:transform doc:name="Remove double quotes from email ID" doc:id="8b6ddff6-493e-40f5-8378-052a0d7963d0" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="email_id" ><![CDATA[%dw 2.0
+output application/java
+---
+vars.email_id replace '\"' with '']]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<os:retrieve doc:name="Retrieve Rank by Country+Field+Role" doc:id="9e16bf83-f752-41f4-bdd6-ed66cc915b7b" key="#[vars.countryFieldArr[0] ++ '|' ++ vars.countryFieldArr[1] ++ '|' ++ vars.current_role]" objectStore="Object_store_Role_to_Rank" target="user_rank" >
+				<os:default-value ><![CDATA[#['empty']]]></os:default-value>
+			</os:retrieve>
+			<os:retrieve doc:name="Retrieve DS Comment role by Country+Field+Role" doc:id="3ee2923d-658f-4ba6-a366-0c3a2646c54b" key="#[vars.countryFieldArr[0] ++ '|' ++ vars.countryFieldArr[1] ++ '|' ++ vars.current_role]" objectStore="Object_store_Role_to_CommentRole" target="user_ds_comment_role" >
+				<os:default-value ><![CDATA[#['empty']]]></os:default-value>
+			</os:retrieve>
+			<choice doc:name="Choice" doc:id="408492e9-44f3-4f3e-933f-f937bc24d182" >
+				<when expression="#[vars.user_ds_comment_role != 'empty']" >
+					<scripting:execute engine="groovy" doc:name="Execute add to commentRoleArr" doc:id="383d41b1-bb86-4441-b9c5-0b36506ea81d" >
+						<scripting:code >vars.commentRoleArr.add(vars.email_id + '|' + vars.fname_lname.trim() +'|' + vars.user_rank + '|' + vars.user_ds_comment_role)</scripting:code>
+					</scripting:execute>
+				</when>
+			</choice>
+			<os:retrieve doc:name="Retrieve DS Sign role by Country+Field+Role" doc:id="4f072ecc-5b53-4f50-931c-eab519924dc9" key="#[vars.countryFieldArr[0] ++ '|' ++ vars.countryFieldArr[1] ++ '|' ++ vars.current_role]" objectStore="Object_store_Role_to_SignRole" target="user_ds_sign_role" >
+				<os:default-value ><![CDATA[#['empty']]]></os:default-value>
+			</os:retrieve>
+			<choice doc:name="Choice" doc:id="2b4be50b-d078-428d-bb1b-d9c05c6b2a6e">
+				<when expression="#[vars.user_ds_sign_role != 'empty']">
+					<scripting:execute engine="groovy" doc:name="Execute add to signRoleArr" doc:id="07dc154b-08f4-4657-bcf5-1164a8ef7024">
+						<scripting:code>vars.signRoleArr.add(vars.email_id + '|' + vars.fname_lname.trim() + '|' + vars.user_rank + '|' + vars.user_ds_sign_role)</scripting:code>
+					</scripting:execute>
+				</when>
+			</choice>
+		</foreach>
+		<flow-ref doc:name="Create DS envelope via anchros offsets" doc:id="6ec729a6-f7e8-4a50-9fe6-aca323ca1e72" name="create-ds-envelope-recipients-using-anchor-offsets"/>
+		<ee:transform doc:name="Set Report name" doc:id="5048d4c2-0a36-4917-b257-f15bc31633d6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="report-name" ><![CDATA[%dw 2.0
+output application/java
+var repName = "Reserve-Report-" ++ vars.countryFieldArr[0] ++ "-" ++ vars.countryFieldArr[1] ++ ".pdf"
+---
+repName]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Set DS Envelope Context" doc:id="1f422f8f-2817-469a-8234-123c8caa95ce">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable resource="set-envelope-context.dwl" variableName="envelopeContext" />
+			</ee:variables>
+		</ee:transform>
+	</flow>
+	<flow name="create-ds-envelope-recipients-using-anchor-offsets" doc:id="c5aca785-6d20-44fb-94eb-adf0f6f8cf4a" >
+		<ee:transform doc:name="Create CommentRole JSON" doc:id="a29d8670-36c1-4157-ab82-8d51b50054ee" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable resource="set-comment-role-1.dwl" variableName="commentRoleJSON" />
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Count # commentRoleArr elements" doc:id="452655a8-f138-4af2-99bf-ed157a8a1e95" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="commentRoleArrElemCount" ><![CDATA[%dw 2.0
+output application/java
+---
+sizeOf(vars.commentRoleArr) default 0]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Create SignRole JSON" doc:id="64cf25ab-5f34-44fa-b04a-81c8b37b5eec" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="signRoleJSON" ><![CDATA[%dw 2.0
+output application/json
+var arr = vars.signRoleArr
+---
+{
+	"signers": arr map(item, itemIndex) -> {
+		"tabs" : {
+			"signHereTabs" : [
+				{
+					"recipientId" : (item splitBy("|"))[2] + vars.commentRoleArrElemCount,
+					"anchorString" : (item splitBy("|"))[3],
+					"scaleValue" : p('docusign.anchorstring.signertab.scale'),
+					"anchorYOffset" : p('docusign.anchorstring.signertab.yoffsets'),
+					"anchorXOffset" : p('docusign.anchorstring.signertab.xoffsets')
+				}
+			],
+			"dateSignedTabs" : [
+				{
+					"recipientId" : (item splitBy("|"))[2] + vars.commentRoleArrElemCount,
+					"anchorString" : "DATE" ++ ((item splitBy("|"))[3] replace "SIGN" with("") ),
+					"anchorIgnoreIfNotPresent" : p('docusign.anchorstring.datesignedtab.anchorIgnoreIfNotPresent'),
+					"scaleValue" : p('docusign.anchorstring.datesignedtab.scale'),
+					"anchorYOffset" : p('docusign.anchorstring.datesignedtab.yoffsets'),
+					"anchorXOffset" : p('docusign.anchorstring.datesignedtab.xoffsets')
+				}
+			]
+		},
+		"email" : (item splitBy("|"))[0],
+		"name" : (item splitBy("|"))[1],
+		"recipientId" : (item splitBy("|"))[2] + vars.commentRoleArrElemCount,
+		"routingOrder" : (item splitBy("|"))[2] + vars.commentRoleArrElemCount		
+	}
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Accumulate" doc:id="7b813d14-5839-4d43-b9bd-ec88a250d648" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="combineArrJson" ><![CDATA[%dw 2.0
+output application/json
+var crj = vars.commentRoleJSON
+var srj = vars.signRoleJSON
+---
+{
+	"signers" : crj.signers ++ srj.signers
+}
+]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Count # entries" doc:id="1014355f-e5e6-4599-9c30-d79195b1e9c1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="entryCount" ><![CDATA[%dw 2.0
+output application/java
+---
+sizeOf(vars.combinedArr) default 0]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+	</flow>
+	<flow name="set-envelope-context-using-server-template" doc:id="d5ee8d5f-fe18-40f3-bc45-2711753f4efa" >
+		<os:retrieve doc:name="Retrieve DS TemplateID by Country+Field" doc:id="daa03c3e-9a53-4cc8-b8c4-7c01f992b38f" key="#[vars.countryFieldArr[0] ++ '|' ++ vars.countryFieldArr[1]]" objectStore="Object_store_Role_to_DSTemplateID" target="ds-template-id">
+			<os:default-value ><![CDATA[#['empty']]]></os:default-value>
+		</os:retrieve>
+		<os:retrieve doc:name="Retrieve Roles by Country+Field" doc:id="bf84167b-cc6c-48a3-ac6d-3fa31e8e1b55" key="#[vars.countryFieldArr[0] ++ '|' ++ vars.countryFieldArr[1]]" objectStore="Object_store_Country-Field_to_Role" target="roles-from-lookup"/>
+		<ee:transform doc:name="Split out roles" doc:id="2f65eed2-3a95-4c9e-a2fc-b68372824dff" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+var rolePsv = vars."roles-from-lookup"
+---
+rolePsv splitBy('|') default ""]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[[]]" doc:name="Set Array for Sign Roles" doc:id="e1a5cd20-5558-474e-b4eb-70ac88af6501" variableName="signRoleArr"/>
+		<set-variable value="#[[]]" doc:name="Set Array for Comment Roles" doc:id="d937efe9-65ee-4607-9b5a-ecf1d34de54f" variableName="commentRoleArr"/>
+		<foreach doc:name="For Each Role" doc:id="f2a394e4-aa69-421a-94ab-595a47931489" collection="#[payload]">
+			<set-variable value="#[payload]" doc:name="Set Role" doc:id="dcd2172a-09d9-4298-b9c6-3aa371e1e5b4" variableName="current_role"/>
+			<os:retrieve doc:name="Retrieve user's name by Country+Field+Role" doc:id="ed67c7b6-002b-412f-bfd3-51da6c6c7c45" key="#[vars.countryFieldArr[0] ++ '|' ++ vars.countryFieldArr[1] ++ '|' ++ vars.current_role]" objectStore="Object_store_Role_to_Name" target="fname_lname">
+				<os:default-value ><![CDATA[#['empty']]]></os:default-value>
+			</os:retrieve>
+			<http:request method="GET" doc:name="Get email ID by user name" doc:id="7337c389-4968-4a77-b3a3-ac77b094c835" config-ref="User_details_HTTP_Request_configuration" path="${user.details.api.legacyuser.path}">
+				<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"name" : trim(vars.fname_lname)
+}]]]></http:query-params>
+			</http:request>
+			<set-variable value='#[payload[0].mail]' doc:name="Get Email ID" doc:id="15f8a34d-57cb-4d39-a27f-755cd0263cb9" variableName="email_id"/>
+			<ee:transform doc:name="Remove double quotes from email ID" doc:id="61db7ffa-a88a-467d-94fc-3503e30e9d06" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="email_id" ><![CDATA[%dw 2.0
+output application/java
+---
+vars.email_id replace '\"' with '']]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<os:retrieve doc:name="Retrieve Rank by Country+Field+Role" doc:id="a379c336-ccaf-422c-810b-31c6dbcd83aa" key="#[vars.countryFieldArr[0] ++ '|' ++ vars.countryFieldArr[1] ++ '|' ++ vars.current_role]" target="user_rank" objectStore="Object_store_Role_to_Rank">
+				<os:default-value ><![CDATA[#['empty']]]></os:default-value>
+			</os:retrieve>
+			<os:retrieve doc:name="Retrieve DS Comment role by Country+Field+Role" doc:id="e5304d17-10ba-4df5-8d00-2d5b06e707c8" key="#[vars.countryFieldArr[0] ++ '|' ++ vars.countryFieldArr[1] ++ '|' ++ vars.current_role]" target="user_ds_comment_role" objectStore="Object_store_Role_to_CommentRole">
+				<os:default-value ><![CDATA[#['empty']]]></os:default-value>
+			</os:retrieve>
+			<choice doc:name="Choice" doc:id="fc1bea9d-b7c3-4b95-bffe-50cfe877925d" >
+				<when expression="#[vars.user_ds_comment_role != 'empty']">
+					<scripting:execute engine="groovy" doc:name="Execute add to commentRoleArr" doc:id="fdc9a135-8a7e-4896-a7e8-f6c7af126f1b">
+				<scripting:code>vars.commentRoleArr.add(vars.email_id + '|' + vars.fname_lname.trim() +'|' + vars.user_rank + '|' + vars.user_ds_comment_role)</scripting:code>
+			</scripting:execute>
+				</when>
+			</choice>
+			<os:retrieve doc:name="Retrieve DS Sign role by Country+Field+Role" doc:id="c5367938-bfde-4e71-8464-f363c272f14b" key="#[vars.countryFieldArr[0] ++ '|' ++ vars.countryFieldArr[1] ++ '|' ++ vars.current_role]" target="user_ds_sign_role" objectStore="Object_store_Role_to_SignRole">
+				<os:default-value><![CDATA[#['empty']]]></os:default-value>
+			</os:retrieve>
+			<choice doc:name="Choice" doc:id="6171f413-5e46-4821-b240-7650b99ca36e" >
+				<when expression="#[vars.user_ds_sign_role != 'empty']">
+					<scripting:execute engine="groovy" doc:name="Execute add to signRoleArr" doc:id="be8f3fde-c67f-4a36-a454-ffc0ce58c495">
+				<scripting:code>vars.signRoleArr.add(vars.email_id + '|' + vars.fname_lname.trim() + '|' + vars.user_rank + '|' + vars.user_ds_sign_role)</scripting:code>
+			</scripting:execute>
+				</when>
+			</choice>
+		</foreach>
+		<ee:transform doc:name="Combine comment and sign arrays" doc:id="a823167d-aa8c-40c2-b5b7-038674cc5dcb">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="combinedArr"><![CDATA[%dw 2.0
+output application/java
+---
+vars.commentRoleArr ++ vars.signRoleArr]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="Create DS Envelope recipients" doc:id="fc65b25a-10b3-4624-ad40-bd2661673371" name="create-ds-envelope-recipients"/>
+		<ee:transform doc:name="Set DS Envelope Context" doc:id="76af2fe2-debc-4c6c-887d-72221034cfcb">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable resource="set-envelope-context.dwl" variableName="envelopeContext" />
+			</ee:variables>
+		</ee:transform>
+	</flow>
+	<flow name="create-ds-envelope-recipients" doc:id="aeaa45be-861b-46c7-90b1-c873a512c6c3" >
+		<ee:transform doc:name="Accumulate" doc:id="60aaefc8-17d8-41d5-a78a-dc551b44a5b4">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{}]]></ee:set-payload>
+			</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="combineArrJson"><![CDATA[%dw 2.0
+output application/json
+var arr = vars.combinedArr
+---
+{
+	"signers": arr map(item, itemIndex) -> {
+		"email" : (item splitBy("|"))[0],
+		"name" : (item splitBy("|"))[1],
+		"recipientId" : (item splitBy("|"))[2],
+		"routingOrder" : (item splitBy("|"))[2],
+		"roleName" : (item splitBy("|"))[3]
+	}
+}
+
+]]></ee:set-variable>
+				</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Count # entries" doc:id="88875cc1-aa28-4702-b7aa-ff79f579f4c7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="entryCount" ><![CDATA[%dw 2.0
+output application/java
+---
+sizeOf(vars.combinedArr) default 0]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+	</flow>
+	<flow name="set-envelope-context" doc:id="91aa740b-b092-4974-8add-ae3cae0a6e57" >
+		<ee:transform doc:name="Set Envelope Context" doc:id="feaf2fd3-b958-4274-a5f2-b95f44b93727">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable resource="set-envelope-context.dwl" variableName="envelopeContext" />
+			</ee:variables>
+		</ee:transform>
+	</flow>
+	<flow name="lookup-init" doc:id="292e2c6b-1ceb-4a0e-a2eb-40151be2fd7a">
+		<logger level="INFO" doc:name="+Logger" doc:id="acadc965-1274-4037-a653-6585815c105f" message='{ "API_NAME" : "${api.name}", "API_VERSION" : "${api.version}" , "FLOW_NAME": "+#[mule.muleContext.componentLocator.componentLocations[1].name]", "MULE_ID": "#[message.id]"}' />
+		<flow-ref doc:name="lookup-RoleInfo-init" doc:id="fc49526f-f53d-4040-98ad-4680d3b2f5f2" name="lookup-RoleInfo-init"/>
+		<logger level="INFO" doc:name="-Logger" doc:id="cc7ec4b7-b80d-444e-809b-5f7a11a3deb8" message='{ "API_NAME" : "${api.name}", "API_VERSION" : "${api.version}" , "FLOW_NAME": "-#[mule.muleContext.componentLocator.componentLocations[1].name]", "MULE_ID": "#[message.id]"}' />
+	</flow>
+	<flow name="lookup-RoleInfo-init" doc:id="8407c231-1c1b-47cc-b00c-95d9077fd664" >
+		<flow-ref doc:name="get MS security token" doc:id="4d571082-4c95-48c1-b1d3-6955837c224c" name="get-MS-securityToken" />
+		<http:request method="GET" doc:name="get Graph node for Role Info lookup file" doc:id="5b0e070a-1c2e-4140-bbc9-4cc0fe0f1cad" config-ref="HTTP_Request_configuration_Graph_node" path="${ms.graph.node.path.lookupfile.roleinfo}">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ vars.msAccessToken
+}]]]></http:headers>
+
+		</http:request>
+		<set-variable value="#[payload.'@microsoft.graph.downloadUrl']" doc:name="Set file download URL" doc:id="0c3a3471-e3f7-41e9-83d8-f100d63a8fd7" variableName="fileDownloadUrl" />
+		<http:request method="GET" doc:name="Download lookup file" doc:id="6edb167c-ea35-492c-bcc1-c768f85c67b7" url="#[vars.fileDownloadUrl]" />
+		<ee:transform doc:name="Parse Role Info" doc:id="2a34c794-6b07-4f2a-b0ee-bb49a2c1a650" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="5bfe547e-8e3e-4a30-84ff-d341e4c6c9d6" collection="#[payload.Sheet1]">
+			<os:store doc:name="Store Role to Rank mapping" doc:id="5502ac60-e9c9-425c-abd5-9ce5df109db5" objectStore="Object_store_Role_to_Rank" key="#[payload.Country ++ '|' ++ payload.Field ++ '|' ++ payload.Role]">
+				<os:value><![CDATA[#[payload.Rank]]]></os:value>
+			</os:store>
+			<os:store doc:name="Store Role to Name mapping" doc:id="f7ffff0a-1f2a-4206-b962-a29b688f283d" key="#[payload.Country ++ '|' ++ payload.Field ++ '|' ++ payload.Role]" objectStore="Object_store_Role_to_Name">
+				<os:value ><![CDATA[#[payload.Name]]]></os:value>
+			</os:store>
+			<os:store doc:name="Store Role to SignRole Anchor mapping" doc:id="f57432ad-3ca3-4b00-bc0a-0373ac277067" key="#[payload.Country ++ '|' ++ payload.Field ++ '|' ++ payload.Role]" objectStore="Object_store_Role_to_SignRole">
+				<os:value><![CDATA[#[payload.SignRole]]]></os:value>
+			</os:store>
+			<os:store doc:name="Store Role to CommentRole Anchor mapping" doc:id="71f22aac-ea62-4d91-9a88-5974f31de4ab" key="#[payload.Country ++ '|' ++ payload.Field ++ '|' ++ payload.Role]" objectStore="Object_store_Role_to_CommentRole">
+				<os:value><![CDATA[#[payload.CommentRole]]]></os:value>
+			</os:store>
+			<os:retrieve doc:name="Retrieve Role by Country and Field" doc:id="44757542-bbc7-4d8b-9d8d-e10b4831a1ea" key="#[payload.Country ++ '|' ++ payload.Field]" target="role-name" objectStore="Object_store_Country-Field_to_Role">
+				<os:default-value ><![CDATA[#['empty']]]></os:default-value>
+			</os:retrieve>
+			<choice doc:name="Choice" doc:id="cbfb2e91-fbf8-4f6d-a2a2-ca5881208108" >
+				<when expression="#[vars.&quot;role-name&quot; != 'empty']">
+					<set-variable value="#[vars.&quot;role-name&quot; ++ '|' ++ payload.Role]" doc:name="Add role to pipe-sv list for specific Country+Field combo" doc:id="d1dce0cf-a3f3-484e-b22d-de3da2cd2d5b" variableName="roleList"/>
+					<os:store doc:name="Store role to list of roles" doc:id="5ccf1ca4-0e95-4ce1-9890-a541107d68f4" key="#[payload.Country ++ '|' ++ payload.Field]" objectStore="Object_store_Country-Field_to_Role">
+						<os:value ><![CDATA[#[vars.roleList]]]></os:value>
+					</os:store>
+				</when>
+				<otherwise >
+					<os:store doc:name="Store initial role to role list" doc:id="5b46ca3c-60a7-4e87-8abe-15cc5ba2e46f" key="#[payload.Country ++ '|' ++ payload.Field]" objectStore="Object_store_Country-Field_to_Role">
+						<os:value ><![CDATA[#[payload.Role]]]></os:value>
+					</os:store>
+				</otherwise>
+			</choice>
+		</foreach>
+	</flow>
+	<flow name="lookup-DS-Anchors-init" doc:id="474c62bb-9d49-492a-99dd-0a61d512b933" >
+		<flow-ref doc:name="get MS security token" doc:id="159b64ee-3d20-4cb0-b59b-be2532e62de8" name="get-MS-securityToken"/>
+		<http:request method="GET" doc:name="get Graph node for DS Anchor map lookup file" doc:id="7be00b0f-e2ad-47bd-8ef6-7ac16a1ae7a1" config-ref="HTTP_Request_configuration_Graph_node" path="${ms.graph.node.path.lookupfile.dsanchormap}" >
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ vars.msAccessToken
+}]]]></http:headers>
+		</http:request>
+		<set-variable value="#[payload.'@microsoft.graph.downloadUrl']" doc:name="Set file download URL" doc:id="c8939fad-fdc1-45c9-b682-68837c2064bb" variableName="fileDownloadUrl" />
+		<http:request method="GET" doc:name="Download lookup file" doc:id="90c355ce-be18-4e8b-b20f-e4b22a59627f" url="#[vars.fileDownloadUrl]" />
+		<ee:transform doc:name="Parse DS Role Anchor Map" doc:id="d78d7024-6568-4ac2-acf1-3b147cb959b0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="5a6d7b99-899e-4137-a92f-c8eb00befeba" collection="#[payload.Sheet1]">
+			<os:store doc:name="Store Role to SignRole Anchor mapping" doc:id="49c337a7-de1d-4944-a4df-75b24cbbfa49" key="#[payload.Country ++ '|' ++ payload.Field ++ '|' ++ payload.Role]" objectStore="Object_store_Role_to_SignRole">
+			<os:value><![CDATA[#[payload.SignRole]]]></os:value>
+		</os:store>
+			<os:store doc:name="Store Role to CommentRole Anchor mapping" doc:id="4105fddb-304f-4149-846c-334aea7faa0c" key="#[payload.Country ++ '|' ++ payload.Field ++ '|' ++ payload.Role]" objectStore="Object_store_Role_to_CommentRole">
+			<os:value><![CDATA[#[payload.CommentRole]]]></os:value>
+		</os:store>
+			<os:store doc:name="Store Role to DSTemplateID mapping" doc:id="7e48162c-815a-454c-81f8-b81503047d6b" key="#[payload.Country ++ '|' ++ payload.Field]" objectStore="Object_store_Role_to_DSTemplateID">
+				<os:value ><![CDATA[#[payload.DSTemplateID]]]></os:value>
+			</os:store>
+		</foreach>
+	</flow>
+	<flow name="get-MS-securityToken" doc:id="63d76079-2c10-46f1-9fb8-333bdc741d7a">
+		<logger level="INFO" doc:name="+Logger" doc:id="bce525b1-42ab-4b2b-a919-148cef3d17f3" message='{ "API_NAME" : "${api.name}", "API_VERSION" : "${api.version}" , "FLOW_NAME": "+#[mule.muleContext.componentLocator.componentLocations[1].name]", "MULE_ID": "#[message.id]"}' />
+		<ee:transform doc:name="Set variables" doc:id="b3ff661e-2b0d-4c6f-ab38-d49b328870be">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="graphGrantType"><![CDATA[%dw 2.0
+output application/java
+---
+p('ms.graph.token.grant_type')]]></ee:set-variable>
+				<ee:set-variable variableName="graphClientId"><![CDATA[%dw 2.0
+output application/java
+---
+p('ms.graph.token.client_id')]]></ee:set-variable>
+				<ee:set-variable variableName="graphClientSecret"><![CDATA[%dw 2.0
+output application/java
+---
+p('ms.graph.token.client_secret')]]></ee:set-variable>
+				<ee:set-variable variableName="graphScope"><![CDATA[%dw 2.0
+output application/java
+---
+p('ms.graph.token.scope')]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Set payload" doc:id="5f201486-a572-4da3-96d7-8f2df19a4b1b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/x-www-form-urlencoded
+---
+{
+	'grant_type':vars.graphGrantType,
+	'client_id':vars.graphClientId,
+	'client_secret':vars.graphClientSecret,
+	'scope':vars.graphScope
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="get MS access token" doc:id="3f5afa90-fad2-4676-84a6-e198aac4cf6a" config-ref="MS_HTTP_Request_configuration" path="${ms.graph.path.token}" requestStreamingMode="NEVER">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Content-Type" : "application/x-www-form-urlencoded"
+}]]]></http:headers>
+		</http:request>
+		<set-variable value="#[payload.access_token]" doc:name="Set MS access token" doc:id="de1344b1-97f5-467d-940f-d24b887350df" variableName="msAccessToken"/>
+		<logger level="INFO" doc:name="Logger" doc:id="153cef48-b279-41eb-9e28-39c0be8e3ac1" message="MS token --&gt; #[payload]" />
+		<logger level="INFO" doc:name="-Logger" doc:id="066a9737-5dfe-4c4d-9ce1-5823f3fc6da1" message='{ "API_NAME" : "${api.name}", "API_VERSION" : "${api.version}" , "FLOW_NAME": "-#[mule.muleContext.componentLocator.componentLocations[1].name]", "MULE_ID": "#[message.id]"}' />
+	</flow>
+	<flow name="get-DS-securityToken" doc:id="e1cc556c-815c-4dcf-a347-99ef35c19e7f">
+		<logger level="INFO" doc:name="+Logger" doc:id="6b0d6730-406e-4cf2-9d41-a24070c2757c" message='{ "API_NAME" : "${api.name}", "API_VERSION" : "${api.version}" , "FLOW_NAME": "+#[mule.muleContext.componentLocator.componentLocations[1].name]", "MULE_ID": "#[message.id]"}' />
+		<ee:transform doc:name="Transform Message" doc:id="f8b20633-7e59-4f1d-9482-e6633f1e3c24">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="exp"><![CDATA[%dw 2.0
+output application/java
+---
+p('jwt.rs256.exp')]]></ee:set-variable>
+				<ee:set-variable variableName="aud"><![CDATA[%dw 2.0
+output application/java
+---
+p('jwt.rs256.aud')]]></ee:set-variable>
+				<ee:set-variable variableName="scope"><![CDATA[%dw 2.0
+output application/java
+---
+p('jwt.rs256.scope')]]></ee:set-variable>
+				<ee:set-variable variableName="iss"><![CDATA[%dw 2.0
+output application/java
+---
+p('jwt.rs256.iss')]]></ee:set-variable>
+				<ee:set-variable variableName="subject"><![CDATA[%dw 2.0
+output application/java
+---
+p('jwt.rs256.sub.default')]]></ee:set-variable>
+				<ee:set-variable variableName="accountNo"><![CDATA[%dw 2.0
+output application/java
+---
+p('docusign.api.esignature.accountno')]]></ee:set-variable>
+				<ee:set-variable variableName="createEnvContentType"><![CDATA[%dw 2.0
+output application/java
+---
+p('docusign.api.esignature.create_envelope.content_type')]]></ee:set-variable>
+				<ee:set-variable variableName="createEnvAccept"><![CDATA[%dw 2.0
+output application/java
+---
+p('docusign.api.esignature.create_envelope.accept')]]></ee:set-variable>
+				<ee:set-variable variableName="publicKeyFile"><![CDATA[%dw 2.0
+output application/java
+---
+p('app.home') ++ '/' ++ p('jwt.rs256.publicKeyFile')]]></ee:set-variable>
+				<ee:set-variable variableName="privateKeyFile"><![CDATA[%dw 2.0
+output application/java
+---
+p('app.home') ++ '/'  ++ p('jwt.rs256.privateKeyFile')]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+<!-- 		<set-variable value="${app.home}/${jwt.rs256.publicKeyFile}" doc:name="Set publicKeyFile" doc:id="ef34b35d-dcde-48d1-87eb-057dfc38ed33" variableName="publicKeyFile" /> -->
+<!-- 		<set-variable value="${app.home}/${jwt.rs256.privateKeyFile}" doc:name="Set privateKeyFile" doc:id="1954f2e3-392a-48be-8d5a-8f821b85162c" variableName="privateKeyFile" /> -->
+		<java:invoke-static doc:name="create JWT" doc:id="a917aaf8-685c-4f37-998e-dac4d54257ae" class="com.xyzcompany.dtm.security.DocuSignAuth" method="createRs256JWT(String, String, String, String, String, String, String)">
+			<java:args><![CDATA[#[{arg0:vars.iss as String, arg1:vars.subject as String, arg2:vars.exp as String, 
+	arg3:vars.aud as String, arg4:vars.scope as String, arg5:vars.privateKeyFile as String, 
+	arg6:vars.publicKeyFile as String
+}]]]></java:args>
+		</java:invoke-static>
+		<logger level="INFO" doc:name="Logger" doc:id="51fe4389-68c2-4f0b-b4b5-a0dab78e8faa" message="jwt --&gt; #[payload]" />
+		<set-variable value="#[payload]" doc:name="Set JWT token" doc:id="ea3641c3-1cfc-4ffa-96b8-1d0b4cf28317" variableName="jwtToken" />
+		<set-payload value="#['grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&amp;assertion=' ++ vars.jwtToken]" doc:name="Set DS access token request payload" doc:id="aea5f187-9f62-4060-827c-1536227599d2" />
+		<logger level="INFO" doc:name="Logger" doc:id="86973cc1-b2a5-441c-a897-1beb1f0889d6" message="request payload --&gt; #[payload]" />
+		<ee:cache doc:name="Cache" doc:id="68307405-abbc-46be-a7f8-1c3921e66eeb" cachingStrategy-ref="Caching_Strategy">
+			<http:request method="POST" doc:name="Get Access Token" doc:id="b932332a-7ad7-4eac-8434-faf2a02498e8" config-ref="DocuSignAuthHTTP_Request_configuration" path="${docusign.path.token}">
+				<http:headers><![CDATA[#[output application/java
+---
+{
+	"Content-Type" : "application/x-www-form-urlencoded"
+}]]]></http:headers>
+			</http:request>
+		</ee:cache>
+		<set-variable value="#[payload.access_token]" doc:name="Set access token" doc:id="4f1ee44d-a4c2-4f69-8810-96aba0e13ad7" variableName="accessToken" />
+		<logger level="INFO" doc:name="Logger" doc:id="03694280-3877-4037-8c98-b6d85cb601db" message="access token --&gt; #[vars.accessToken]" />
+		<logger level="INFO" doc:name="-Logger" doc:id="c73c8da8-4621-4544-8394-0699b73c312b" message='{ "API_NAME" : "${api.name}", "API_VERSION" : "${api.version}" , "FLOW_NAME": "-#[mule.muleContext.componentLocator.componentLocations[1].name]", "MULE_ID": "#[message.id]"}' />
+	</flow>
+	<flow name="process-canned-report" doc:id="b9817a62-9b23-4b9f-8944-ee8b9c76c4be" >
+		<ee:transform doc:name="Read Report" doc:id="e90ca0e3-e25a-419a-a56b-486793f3629f">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable resource="set-pdf-base64.dwl" variableName="pdfBase64" />
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="create-envelope" doc:id="db976ac4-9690-4173-84f8-9b35e80bdc0d" name="create-envelope"/>
+	</flow>
+</mule>

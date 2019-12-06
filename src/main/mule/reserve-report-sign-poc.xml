@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:mft="http://www.mulesoft.org/schema/mule/mft"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/mft http://www.mulesoft.org/schema/mule/mft/current/mule-mft.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="88d0c6b5-f06f-4ce2-a677-8563e9696bea" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<mft:config name="MFT_Config" doc:name="MFT Config" doc:id="c81e2d45-cf93-4c32-9792-cc3bcc343fa9" >
+		<mft:mft-connection APIUrl="https://mftapi0011.thruinc.com" StorageRepository="mftrepo0011-001.thruinc.com" SiteKey="2036b52c-b054-48cc-9333-4d143de8f68d" FlowSecret="TRNLZBS-APIWU03OYFUIA" />
+	</mft:config>
+	<flow name="HTTP-inbound" doc:id="6f992c45-58a8-444a-889a-ff4c6d82331b" >
+		<http:listener doc:name="Listener" doc:id="3fb26e2c-c02f-4ec1-8598-436f3a7c551b" config-ref="HTTP_Listener_config" path="/start"/>
+		<flow-ref doc:name="create-envelope" doc:id="7b2495a2-a9eb-41ef-9cf1-d0749e43c93f" name="create-envelope"/>
+	</flow>
+	<flow name="SFTP-inbound" doc:id="07d6f0b4-4887-43aa-8c61-e15817c2ff17" >
+		<mft:file-pickup-source doc:name="File Pickup Source" doc:id="566e4841-f9cb-4a11-afa7-2ec71df39df1" config-ref="MFT_Config">
+			<scheduling-strategy >
+				<fixed-frequency frequency="5000" />
+			</scheduling-strategy>
+		</mft:file-pickup-source>
+		<ee:transform doc:name="Parse inbound filename" doc:id="b10064b0-89ba-4319-b581-a45666e1d460" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="filename" ><![CDATA[%dw 2.0
+output application/java
+---
+attributes.fileName]]></ee:set-variable>
+				<ee:set-variable variableName="filecode" ><![CDATA[%dw 2.0
+output application/java
+---
+attributes.fileCode]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="process-report" doc:id="b52a8ad9-0cc2-4f24-bb07-498c163087e6" name="process-report"/>
+	</flow>
+</mule>

@@ -1,0 +1,64 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="payload" format="excel">
+      <types:shape format="weave"><![CDATA[%dw 2.0
+
+type payload = {|
+  Sheet1?: Array<{|    Country: String,     Field: String,     Role: String,     SignRole: String,     CommentRole: String,     DSTemplateID: String  |}>
+|}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="RoleInfo" format="excel">
+      <types:shape format="weave"><![CDATA[%dw 2.0
+
+type RoleInfo = {|
+  Sheet1?: Array<{|    Country: String,     Field: String,     Role: String,     Name: String,     "Prepared By": String,     Rank: String,     SignRole: String,     CommentRole: String  |}>
+|}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#f8b20633-7e59-4f1d-9482-e6633f1e3c24"/>
+  <types:enrichment select="#305c0246-5b00-41b2-bbda-578f10e6e92d">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="payload"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#d78d7024-6568-4ac2-acf1-3b147cb959b0">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="payload"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#35df2bc0-5c98-4422-afb7-e544f02bb4d8"/>
+  <types:enrichment select="#b10064b0-89ba-4319-b581-a45666e1d460"/>
+  <types:enrichment select="#814272ab-fb3e-40f9-aa09-00631b210c1e">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:variables>
+          <types:variable name="countryFieldArr" type="payload"/>
+        </types:variables>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#2a34c794-6b07-4f2a-b0ee-bb49a2c1a650">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="RoleInfo"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#1f422f8f-2817-469a-8234-123c8caa95ce"/>
+  <types:enrichment select="#a29d8670-36c1-4157-ab82-8d51b50054ee"/>
+</types:mule>
